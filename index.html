@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>推荐历史 App - 记录并分享经典应用</title>
+    <style>
+      /* ── Reset & Base ── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+          "Noto Sans SC", sans-serif;
+        background: #f8f9fa;
+        color: #333;
+        padding: 2rem 1.5rem;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      /* ── Header ── */
+      header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+      }
+      header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        color: #1a1a2e;
+      }
+      header p {
+        color: #666;
+        margin-top: 0.4rem;
+        font-size: 1rem;
+      }
+      header .license-badge {
+        display: inline-block;
+        margin-top: 0.6rem;
+        padding: 0.2rem 0.8rem;
+        font-size: 0.75rem;
+        background: #e8e8e8;
+        border-radius: 4px;
+        color: #555;
+      }
+
+      /* ── Stats ── */
+      .stats {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+        color: #888;
+      }
+      .stats span {
+        background: #fff;
+        padding: 0.3rem 1rem;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      }
+
+      /* ── Search / Filter ── */
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+        margin-bottom: 1.5rem;
+      }
+      .toolbar input {
+        flex: 1;
+        min-width: 200px;
+        padding: 0.6rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .toolbar input:focus {
+        border-color: #1a1a2e;
+      }
+      .toolbar .filter-group {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+      .toolbar .filter-btn {
+        padding: 0.4rem 0.9rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        background: #fff;
+        cursor: pointer;
+        font-size: 0.8rem;
+        color: #555;
+        transition: all 0.15s;
+      }
+      .toolbar .filter-btn:hover {
+        border-color: #999;
+      }
+      .toolbar .filter-btn.active {
+        background: #1a1a2e;
+        color: #fff;
+        border-color: #1a1a2e;
+      }
+
+      /* ── Table — 仅保留上下虚线边框 ── */
+      .app-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      }
+      .app-table thead th {
+        padding: 0.9rem 1rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #888;
+        /* 仅上边框虚线 */
+        border-top: 1px dashed #d0d0d0;
+        border-bottom: 1px dashed #d0d0d0;
+      }
+      .app-table tbody td {
+        padding: 1rem;
+        font-size: 0.9rem;
+        vertical-align: middle;
+      }
+      /* 每个单元格仅保留上下虚线边框 */
+      .app-table tbody tr td {
+        border-top: 1px dashed #e0e0e0;
+        border-bottom: 1px dashed #e0e0e0;
+      }
+      /* 移除左右边框 */
+      .app-table thead th:first-child,
+      .app-table tbody td:first-child {
+        border-left: none;
+        padding-left: 1rem;
+      }
+      .app-table thead th:last-child,
+      .app-table tbody td:last-child {
+        border-right: none;
+        padding-right: 1rem;
+      }
+
+      /* ── Rating stars ── */
+      .stars {
+        color: #f0b429;
+        letter-spacing: 1px;
+      }
+
+      /* ── Tags ── */
+      .tag {
+        display: inline-block;
+        padding: 0.15rem 0.55rem;
+        font-size: 0.75rem;
+        border-radius: 4px;
+        background: #eef;
+        color: #445;
+        margin-right: 0.3rem;
+        margin-bottom: 0.2rem;
+      }
+      .tag.android {
+        background: #e8f5e9;
+        color: #2e7d32;
+      }
+      .tag.ios {
+        background: #e3f2fd;
+        color: #1565c0;
+      }
+      .tag.windows {
+        background: #fff3e0;
+        color: #e65100;
+      }
+      .tag.mac {
+        background: #f3e5f5;
+        color: #6a1b9a;
+      }
+      .tag.linux {
+        background: #fce4ec;
+        color: #c62828;
+      }
+      .tag.web {
+        background: #e0f7fa;
+        color: #00695c;
+      }
+      .tag.retired {
+        background: #f5f5f5;
+        color: #999;
+      }
+      .tag.recommend {
+        background: #fff8e1;
+        color: #f57f17;
+      }
+      .tag.classic {
+        background: #fce4ec;
+        color: #d81b60;
+      }
+
+      /* ── Links ── */
+      .app-table a {
+        color: #1a73e8;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .app-table a:hover {
+        text-decoration: underline;
+      }
+
+      /* ── Footer ── */
+      footer {
+        text-align: center;
+        margin-top: 2.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px dashed #ddd;
+        color: #aaa;
+        font-size: 0.8rem;
+      }
+      footer a {
+        color: #888;
+        text-decoration: none;
+      }
+      footer a:hover {
+        color: #555;
+        text-decoration: underline;
+      }
+
+      /* ── Empty state ── */
+      .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #bbb;
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 700px) {
+        body {
+          padding: 1rem 0.8rem;
+        }
+        .app-table thead {
+          display: none;
+        }
+        .app-table tbody tr {
+          display: block;
+          padding: 1rem;
+          border-top: 1px dashed #e0e0e0;
+          border-bottom: 1px dashed #e0e0e0;
+        }
+        .app-table tbody td {
+          display: flex;
+          justify-content: space-between;
+          padding: 0.4rem 0;
+          border: none !important;
+          font-size: 0.85rem;
+        }
+        .app-table tbody td::before {
+          content: attr(data-label);
+          font-weight: 600;
+          color: #888;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+        }
+        .stats {
+          gap: 0.8rem;
+          flex-wrap: wrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>📱 推荐历史 App</h1>
+        <p>记录并分享那些值得被记住的经典应用 · 随便转发修改</p>
+        <span class="license-badge">数据源：README.md — 编辑表格即可更新</span>
+      </header>
+
+      <div class="stats">
+        <span id="totalCount">共 0 款应用</span>
+        <span>🤝 欢迎提交 PR 补充</span>
+      </div>
+
+      <div class="toolbar">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="🔍 搜索应用名称、分类或描述…"
+          oninput="renderTable()"
+        />
+        <div class="filter-group">
+          <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">
+            全部
+          </button>
+          <button class="filter-btn" data-filter="android" onclick="setFilter('android', this)">
+            Android
+          </button>
+          <button class="filter-btn" data-filter="ios" onclick="setFilter('ios', this)">iOS</button>
+          <button class="filter-btn" data-filter="windows" onclick="setFilter('windows', this)">
+            Windows
+          </button>
+          <button class="filter-btn" data-filter="mac" onclick="setFilter('mac', this)">Mac</button>
+          <button class="filter-btn" data-filter="retired" onclick="setFilter('retired', this)">
+            已停运
+          </button>
+        </div>
+      </div>
+
+      <table class="app-table">
+        <thead>
+          <tr>
+            <th>应用名称</th>
+            <th>分类</th>
+            <th>平台</th>
+            <th>评分</th>
+            <th>简介</th>
+            <th>链接</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- 由 JavaScript 动态渲染 -->
+        </tbody>
+      </table>
+
+      <footer>
+        <p>
+          <a href="https://github.com/Ryan202603/recommend-history-version" target="_blank"
+            >GitHub</a
+          >
+          · 基于 Unlicense 协议完全开放 · 欢迎 Fork / PR
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      // ════════════════════════════════════════════════════════════════
+      //  MD 表格行格式（README.md 中「| 应用名称 | 分类 | 平台 | 评分 | 简介 | 链接 |」）
+      //  从第六列 URL 中判断 retired / recommend 标记：
+      //    - retired 列名含 "(已停运)" 或 url 用 * 后缀标记
+      //    推荐用 ★☆ 表示，url 前加 ^ 后缀标记 recommend
+      //  简便方案：扩展 MD 表格为 7 列，加「标记」列
+      //  ═ 更简单：直接从 MD 表格解析，约定：
+      //     链接末尾加 ⛔ 表示已停运，加 ⭐ 表示推荐
+      // ════════════════════════════════════════════════════════════════
+      let apps = [];
+
+      // ── 从 Markdown 表格行解析应用数据 ──
+      function parseMDTable(mdText) {
+        const lines = mdText.split("\n");
+        const results = [];
+        let inTable = false;
+
+        for (const line of lines) {
+          // 检测表格开始：以 | 开头且包含 --- 的分隔行
+          if (line.trimStart().startsWith("|") && line.includes("---")) {
+            inTable = true;
+            continue;
+          }
+          if (!inTable) continue;
+          // 空行或非表格行则结束表格解析
+          if (!line.trimStart().startsWith("|")) {
+            inTable = false;
+            continue;
+          }
+
+          // 解析表格行：分割单元格
+          const cells = line
+            .split("|")
+            .slice(1, -1)
+            .map((c) => c.trim());
+          if (cells.length < 5) continue;
+
+          const name = cells[0];
+          const category = cells[1];
+          const platformRaw = cells[2];
+          const ratingRaw = cells[3];
+          const desc = cells[4];
+          // 第 6 列是链接，格式: [详情](url) 或 [详情](url)⛔⭐ 等
+          const linkCell = cells[5] || "";
+
+          // 解析 URL
+          const urlMatch = linkCell.match(/\[([^\]]*)\]\(([^)]+)\)/);
+          const url = urlMatch ? urlMatch[2] : "";
+
+          // 从链接单元格的尾部标记判断 retired / recommend
+          const afterLink = linkCell.replace(/\[([^\]]*)\]\(([^)]+)\)/, "");
+          const retired = afterLink.includes("⛔") || afterLink.includes("已停运");
+          const recommend = afterLink.includes("⭐") || afterLink.includes("推荐");
+
+          // 解析评分（★ 个数 + ½）
+          const fullStars = (ratingRaw.match(/★/g) || []).length;
+          const hasHalf = ratingRaw.includes("½");
+          const rating = fullStars + (hasHalf ? 0.5 : 0);
+
+          // 解析平台
+          const platforms = platformRaw
+            .split(/[,，\/、\s]+/)
+            .map((p) => p.trim().toLowerCase())
+            .filter((p) =>
+              ["android", "ios", "windows", "mac", "linux", "web", "全平台"].includes(p),
+            );
+          // 将"全平台"展开
+          const allPlatforms = ["android", "ios", "windows", "mac", "linux", "web"];
+          if (platforms.includes("全平台")) {
+            platforms.splice(platforms.indexOf("全平台"), 1, ...allPlatforms);
+          }
+
+          results.push({ name, category, platforms, rating, desc, url, retired, recommend });
+        }
+        return results;
+      }
+
+      // ── 加载 README.md ──
+      async function loadApps() {
+        try {
+          const resp = await fetch("README.md");
+          const md = await resp.text();
+          apps = parseMDTable(md);
+        } catch (e) {
+          console.warn("无法加载 README.md，使用空数据", e);
+          apps = [];
+        }
+        renderTable();
+      }
+
+      // ── 过滤状态 ──
+      let currentFilter = "all";
+
+      function setFilter(filter, btn) {
+        currentFilter = filter;
+        document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+        if (btn) btn.classList.add("active");
+        renderTable();
+      }
+
+      function renderTable() {
+        const search = document.getElementById("searchInput").value.trim().toLowerCase();
+        const tbody = document.getElementById("tableBody");
+
+        const filtered = apps.filter((app) => {
+          // 搜索过滤
+          if (search) {
+            const match =
+              app.name.toLowerCase().includes(search) ||
+              app.category.toLowerCase().includes(search) ||
+              app.desc.toLowerCase().includes(search);
+            if (!match) return false;
+          }
+          // 分类过滤
+          if (currentFilter === "retired") return app.retired === true;
+          if (currentFilter !== "all") return app.platforms.includes(currentFilter);
+          return true;
+        });
+
+        // 更新计数
+        document.getElementById("totalCount").textContent = `共 ${filtered.length} 款应用`;
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">没有找到匹配的应用 🤷</div></td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = filtered
+          .map((app) => {
+            const stars = "★".repeat(Math.floor(app.rating)) + (app.rating % 1 >= 0.5 ? "½" : "");
+            const platformTags = app.platforms
+              .map((p) => `<span class="tag ${p}">${p}</span>`)
+              .join(" ");
+            const badges = [];
+            if (app.retired) badges.push('<span class="tag retired">已停运</span>');
+            if (app.recommend) badges.push('<span class="tag classic">推荐</span>');
+            const linkHtml = app.url
+              ? `<a href="${app.url}" target="_blank" rel="noopener">详情 ↗</a>`
+              : "—";
+            return `<tr>
+                <td data-label="应用名称"><strong>${app.name}</strong></td>
+                <td data-label="分类">${app.category}</td>
+                <td data-label="平台">${platformTags} ${badges.join(" ")}</td>
+                <td data-label="评分"><span class="stars">${stars}</span></td>
+                <td data-label="简介">${app.desc}</td>
+                <td data-label="链接">${linkHtml}</td>
+            </tr>`;
+          })
+          .join("");
+      }
+
+      // 初始渲染 — 从 README.md 加载数据
+      loadApps();
+    </script>
+  </body>
+</html>
