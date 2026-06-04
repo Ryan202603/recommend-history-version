@@ -52,6 +52,11 @@
         border-radius: 4px;
         color: #555;
       }
+      header .test-info {
+        margin-top: 0.4rem;
+        font-size: 0.85rem;
+        color: #999;
+      }
 
       /* ── Stats ── */
       .stats {
@@ -295,8 +300,10 @@
       <table class="app-table">
         <thead>
           <tr>
-            <th style="width: 22%">应用名称</th>
-            <th style="width: 10%">版本</th>
+            <th style="width: 20%">应用名称</th>
+            <th style="width: 8%">版本</th>
+            <th style="width: 12%">测试手机</th>
+            <th style="width: 10%">测试时间</th>
             <th>简介</th>
           </tr>
         </thead>
@@ -317,7 +324,7 @@
 
     <script>
       // ════════════════════════════════════════════════════════════════
-      //  数据源：README.md 中的表格「应用名称 | 版本 | 简介」
+      //  数据源：README.md 中的表格「应用名称 | 版本 | 测试手机 | 测试时间 | 简介」
       //  标记规则（写在应用名称末尾）：
       //    ⛔ — 已停运   ⭐ — 特别推荐
       //  相同应用名称的多行会自动合并展示
@@ -349,14 +356,16 @@
 
           const nameRaw = cells[0];
           const version = cells[1] || "—";
-          const desc = cells[2] || "";
+          const device = cells[2] || "—";
+          const date = cells[3] || "—";
+          const desc = cells[4] || "";
 
           // 从应用名称解析标记
           let name = nameRaw.replace(/[⛔⭐]/g, "").trim();
           const retired = nameRaw.includes("⛔");
           const recommend = nameRaw.includes("⭐");
 
-          result.push({ name, version, desc, retired, recommend });
+          result.push({ name, version, device, date, desc, retired, recommend });
         }
         return result;
       }
@@ -406,7 +415,7 @@
         document.getElementById("versionCount").textContent = `${filtered.length} 个版本`;
 
         if (filtered.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state">没有找到匹配的应用 🤷</div></td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">没有找到匹配的应用 🤷</div></td></tr>`;
           return;
         }
 
@@ -419,7 +428,7 @@
             groups.push({ name: r.name, retired: r.retired, recommend: r.recommend, versions: [] });
           }
           const g = groups.find((g) => g.name === r.name);
-          g.versions.push({ version: r.version, desc: r.desc });
+          g.versions.push({ version: r.version, device: r.device, date: r.date, desc: r.desc });
         }
 
         tbody.innerHTML = groups
@@ -440,6 +449,8 @@
                 return `<tr>
                 <td data-label="应用名称"${isFirst ? ` rowspan="${rowspan}"` : ""} class="${isFirst ? "name-cell-main" : "name-cell-hidden"}">${nameDisplay}</td>
                 <td data-label="版本">${v.version}</td>
+                <td data-label="测试手机">${v.device}</td>
+                <td data-label="测试时间">${v.date}</td>
                 <td data-label="简介">${v.desc}</td>
             </tr>`;
               })
