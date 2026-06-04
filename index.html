@@ -52,11 +52,6 @@
         border-radius: 4px;
         color: #555;
       }
-      header .test-info {
-        margin-top: 0.4rem;
-        font-size: 0.85rem;
-        color: #999;
-      }
 
       /* ── Stats ── */
       .stats {
@@ -96,30 +91,6 @@
       .toolbar input:focus {
         border-color: #1a1a2e;
       }
-      .toolbar .filter-group {
-        display: flex;
-        gap: 0.4rem;
-        flex-wrap: wrap;
-      }
-      .toolbar .filter-btn {
-        padding: 0.4rem 0.9rem;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        background: #fff;
-        cursor: pointer;
-        font-size: 0.8rem;
-        color: #555;
-        transition: all 0.15s;
-      }
-      .toolbar .filter-btn:hover {
-        border-color: #999;
-      }
-      .toolbar .filter-btn.active {
-        background: #1a1a2e;
-        color: #fff;
-        border-color: #1a1a2e;
-      }
-
       /* ── Table — 仅保留上下虚线边框 ── */
       .app-table {
         width: 100%;
@@ -162,28 +133,7 @@
         padding-right: 1rem;
       }
 
-      /* ── Empty state ── */
-      .tag {
-        display: inline-block;
-        padding: 0.15rem 0.55rem;
-        font-size: 0.75rem;
-        border-radius: 4px;
-        background: #eef;
-        color: #445;
-        margin-right: 0.3rem;
-        margin-bottom: 0.2rem;
-      }
-      .tag.retired {
-        background: #f5f5f5;
-        color: #999;
-      }
-      .tag.classic {
-        background: #fce4ec;
-        color: #d81b60;
-      }
-
-      /* ── Tags ── */
-      footer {
+      /* ── 名称合并行：桌面端隐藏非首行内容 ── */
         text-align: center;
         margin-top: 2.5rem;
         padding-top: 1.5rem;
@@ -266,8 +216,7 @@
   <body>
     <div class="container">
       <header>
-        <h1>📱 推荐历史 App</h1>
-        <p>记录并分享那些值得被记住的经典应用 · 随便转发修改</p>
+        <h1>📱 App 版本记录</h1>
         <span class="license-badge">数据源：README.md — 编辑表格即可更新</span>
       </header>
 
@@ -284,17 +233,6 @@
           placeholder="🔍 搜索应用名称或简介…"
           oninput="renderTable()"
         />
-        <div class="filter-group">
-          <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">
-            全部
-          </button>
-          <button class="filter-btn" data-filter="retired" onclick="setFilter('retired', this)">
-            已停运
-          </button>
-          <button class="filter-btn" data-filter="recommend" onclick="setFilter('recommend', this)">
-            推荐
-          </button>
-        </div>
       </div>
 
       <table class="app-table">
@@ -325,8 +263,6 @@
     <script>
       // ════════════════════════════════════════════════════════════════
       //  数据源：README.md 中的表格「应用名称 | 版本 | 测试手机 | 测试时间 | 简介」
-      //  标记规则（写在应用名称末尾）：
-      //    ⛔ — 已停运   ⭐ — 特别推荐
       //  相同应用名称的多行会自动合并展示
       // ════════════════════════════════════════════════════════════════
       let rows = [];
@@ -354,18 +290,13 @@
             .map((c) => c.trim());
           if (cells.length < 2) continue;
 
-          const nameRaw = cells[0];
-          const version = cells[1] || "—";
-          const device = cells[2] || "—";
-          const date = cells[3] || "—";
-          const desc = cells[4] || "";
-
-          // 从应用名称解析标记
-          let name = nameRaw.replace(/[⛔⭐]/g, "").trim();
-          const retired = nameRaw.includes("⛔");
-          const recommend = nameRaw.includes("⭐");
-
-          result.push({ name, version, device, date, desc, retired, recommend });
+          result.push({
+            name: cells[0],
+            version: cells[1] || "—",
+            device: cells[2] || "—",
+            date: cells[3] || "—",
+            desc: cells[4] || "",
+          });
         }
         return result;
       }
@@ -383,31 +314,17 @@
         renderTable();
       }
 
-      // ── 过滤状态 ──
-      let currentFilter = "all";
-
-      function setFilter(filter, btn) {
-        currentFilter = filter;
-        document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
-        if (btn) btn.classList.add("active");
-        renderTable();
-      }
-
       function renderTable() {
         const search = document.getElementById("searchInput").value.trim().toLowerCase();
         const tbody = document.getElementById("tableBody");
 
-        // 先过滤
-        let filtered = rows.filter((r) => {
-          if (search) {
-            const match =
-              r.name.toLowerCase().includes(search) || r.desc.toLowerCase().includes(search);
-            if (!match) return false;
-          }
-          if (currentFilter === "retired") return r.retired === true;
-          if (currentFilter === "recommend") return r.recommend === true;
-          return true;
-        });
+        // 搜索过滤
+        let filtered = rows;
+        if (search) {
+          filtered = rows.filter(
+            (r) => r.name.toLowerCase().includes(search) || r.desc.toLowerCase().includes(search),
+          );
+        }
 
         // 统计
         const appNames = [...new Set(filtered.map((r) => r.name))];
@@ -425,26 +342,20 @@
         for (const r of filtered) {
           if (!seen.has(r.name)) {
             seen.add(r.name);
-            groups.push({ name: r.name, retired: r.retired, recommend: r.recommend, versions: [] });
+            groups.push({ name: r.name, versions: [] });
           }
           const g = groups.find((g) => g.name === r.name);
           g.versions.push({ version: r.version, device: r.device, date: r.date, desc: r.desc });
         }
 
         tbody.innerHTML = groups
-          .map((g, gi) => {
-            const badges = [];
-            if (g.retired) badges.push('<span class="tag retired">已停运</span>');
-            if (g.recommend) badges.push('<span class="tag classic">推荐</span>');
-            const badgeHtml = badges.length ? " " + badges.join(" ") : "";
-
-            return g.versions
+          .map((g) =>
+            g.versions
               .map((v, vi) => {
                 const isFirst = vi === 0;
                 const rowspan = g.versions.length;
-                // 桌面端用 rowspan 合并第一列；移动端每行都显示名称（data-label 控制）
                 const nameDisplay = isFirst
-                  ? `<strong>${g.name}</strong>${badgeHtml}`
+                  ? `<strong>${g.name}</strong>`
                   : `<span class="mobile-only-name">${g.name}</span>`;
                 return `<tr>
                 <td data-label="应用名称"${isFirst ? ` rowspan="${rowspan}"` : ""} class="${isFirst ? "name-cell-main" : "name-cell-hidden"}">${nameDisplay}</td>
@@ -454,8 +365,8 @@
                 <td data-label="简介">${v.desc}</td>
             </tr>`;
               })
-              .join("");
-          })
+              .join(""),
+          )
           .join("");
       }
 
