@@ -1,0 +1,7 @@
+# robots.txt — 历史版本 App 推荐
+# https://ryan202603.github.io/recommend-history-version/
+
+User-agent: *
+Allow: /
+
+Sitemap: https://ryan202603.github.io/recommend-history-version/sitemap.xml
